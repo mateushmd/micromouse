@@ -1,0 +1,12 @@
+#define MAZE_SIZE 16
+#define TOP_LEFT_CENTER_X 7
+#define TOP_LEFT_CENTER_Y 7
+#define TOP_RIGHT_CENTER_X 8
+#define TOP_RIGHT_CENTER_Y 7
+#define BOTTOM_LEFT_CENTER_X 7
+#define BOTTOM_LEFT_CENTER_Y 8
+#define BOTTOM_RIGHT_CENTER_X 8
+#define BOTTOM_RIGHT_CENTER_Y 8
+#define IDX2D(x, y) ((x) + (y) * MAZE_SIZE)
+
+int maze[MAZE_SIZE][MAZE_SIZE] = {0};
