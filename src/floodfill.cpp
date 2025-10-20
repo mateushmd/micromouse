@@ -1,11 +1,12 @@
 #include "micromouse.hpp"
+#include "API.h"
 #include <cstdint>
 #include <iostream>
 
 #define MAZE_DIMENSIONS 16
 #define MAZE_SIZE 256
 #define HALF_MAZE_SIZE 8
-#define IDX2D(x, y) ((x) + (y) * MAZE_SIZE)
+#define IDX2D(x, y) ((x) + (y) * MAZE_DIMENSIONS)
 
 #define WALL_U 0b0001
 #define WALL_D 0b0010
@@ -13,9 +14,9 @@
 #define WALL_R 0b1000
 
 #define UP 0
-#define DOWN 0
-#define LEFT 0
-#define RIGHT 0
+#define RIGHT 1
+#define DOWN 2
+#define LEFT 3
 
 // clang-format off
 uint8_t flood[] = {
@@ -61,12 +62,6 @@ uint8_t x = 0;
 uint8_t y = 0;
 uint8_t rotation = UP;
 
-bool checkSensorUp() { return false; }
-
-bool checkSensorLeft() { return false; }
-
-bool checkSensorRight() { return false; }
-
 void reflood() {
 
 }
@@ -75,19 +70,21 @@ void move(uint8_t vx, uint8_t vy) {}
 
 bool explore()
 {
+	API api;
     if (rotation == UP)
     {
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorUp())
+            if (api.wallFront())
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
             }
             else
             {
-                move(0, 1);
+				// Go up
+				api.moveForward();
                 return true;
             }
         }
@@ -95,14 +92,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorRight())
+            if (api.wallRight())
             {
                 maze[IDX2D(x, y)] |= WALL_R;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
             }
             else
             {
-                move(1, 0);
+				// Go to the right 
+				api.turnRight();
+				api.moveForward();
                 return true;
             }
         }
@@ -110,14 +109,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorLeft())
+            if (api.wallLeft())
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
             }
             else
             {
-                move(-1, 0);
+				// Go to the left
+				api.turnLeft();
+				api.moveForward();
                 return true;
             }
         }
@@ -127,29 +128,29 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorUp())
-            {
-                maze[IDX2D(x, y)] |= WALL_D;
-                maze[IDX2D(x, y - 1)] |= WALL_U;
-            }
-            else
-            {
-                move(0, -1);
-                return true;
+			if (api.wallFront()) {
+				maze[IDX2D(x, y)] |= WALL_D;
+				maze[IDX2D(x, y - 1)] |= WALL_U;
+            } else {
+				// Go down
+				api.moveForward();
+				return true;
             }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorRight())
+            if (api.wallRight())
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
             }
             else
             {
-                move(-1, 0);
+				// Go to the left
+				api.turnRight();
+				api.moveForward();
                 return true;
             }
         }
@@ -157,14 +158,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorLeft())
+            if (api.wallLeft())
             {
                 maze[IDX2D(x, y)] |= WALL_R;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
             }
             else
             {
-                move(1, 0);
+				// Go to the right
+				api.turnLeft();
+				api.moveForward();
                 return true;
             }
         }
@@ -174,14 +177,15 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorUp())
+            if (api.wallFront())
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
             }
             else
             {
-                move(-1, 0);
+				// Go to the left
+				api.moveForward();
                 return true;
             }
         }
@@ -189,14 +193,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorRight())
+            if (api.wallRight())
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
             }
             else
             {
-                move(0, 1);
+				// Go up
+				api.turnRight();
+				api.moveForward();
                 return true;
             }
         }
@@ -204,14 +210,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorLeft())
+            if (api.wallLeft())
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x, y - 1)] |= WALL_U;
             }
             else
             {
-                move(0, -1);
+				// Go down
+				api.turnLeft();
+				api.moveForward();
                 return true;
             }
         }
@@ -221,28 +229,31 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorUp())
+            if (api.wallFront())
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
             }
             else
             {
-                move(1, 0);
+				// Go to the right
+				api.moveForward();
                 return true;
             }
         }
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorRight())
+            if (api.wallRight())
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x, y - 1)] |= WALL_U;
             }
             else
             {
-                move(0, -1);
+				// Go down
+				api.turnRight();
+				api.moveForward();
                 return true;
             }
         }
@@ -250,14 +261,16 @@ bool explore()
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
         {
-            if (checkSensorLeft())
+            if (api.wallLeft())
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
             }
             else
             {
-                move(0, 1);
+				// Go up
+				api.turnLeft();
+				api.moveForward();
                 return true;
             }
         }
@@ -267,12 +280,13 @@ bool explore()
 
 void printMaze()
 {
-    for (int i = 0; i < MAZE_SIZE; i++)
+    for (int i = 0; i < MAZE_DIMENSIONS; i++)
     {
-        for (int j = 0; j < MAZE_SIZE; j++)
-        {
-            std::cout << flood[IDX2D(i, j)] << ", ";
+        for (int j = 0; j < MAZE_DIMENSIONS; j++)
+     {
+            std::cerr << (int)flood[IDX2D(i, j)] << ", ";
+            std::cout << "setText " << i << " " << j << " " << (int) flood[IDX2D(i, j)] << std::endl;
         }
-        std::cout << std::endl;
+        std::cerr << std::endl;
     }
 }
