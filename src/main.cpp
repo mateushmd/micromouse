@@ -1,3 +1,8 @@
 #include "API.h"
+#include "micromouse.hpp"
 
-int main() { return 0; }
+int main()
+{
+    printMaze();
+    return 0;
+}
