@@ -39,20 +39,20 @@ uint8_t flood[] = {
 
 uint8_t maze[MAZE_SIZE] = {
     WALL_U | WALL_L, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U | WALL_R,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
-    WALL_R,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_L,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
+    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
     WALL_D | WALL_L, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D | WALL_R,
 };
 // clang-format on
@@ -67,9 +67,8 @@ bool checkSensorLeft() { return false; }
 
 bool checkSensorRight() { return false; }
 
-void reflood() 
-{
-    
+void reflood() {
+
 }
 
 void move(uint8_t vx, uint8_t vy) {}
@@ -85,10 +84,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
-                return false;
             }
-            move(0, 1);
-            return true;
+            else
+            {
+                move(0, 1);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
@@ -98,10 +99,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_R;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
-                return false;
             }
-            move(1, 0);
-            return true;
+            else
+            {
+                move(1, 0);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
@@ -111,10 +114,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
-                return false;
             }
-            move(-1, 0);
-            return true;
+            else
+            {
+                move(-1, 0);
+                return true;
+            }
         }
     }
     else if (rotation == DOWN)
@@ -126,10 +131,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x, y - 1)] |= WALL_U;
-                return false;
             }
-            move(0, -1);
-            return true;
+            else
+            {
+                move(0, -1);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
@@ -139,10 +146,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
-                return false;
             }
-            move(-1, 0);
-            return true;
+            else
+            {
+                move(-1, 0);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
@@ -152,10 +161,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_R;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
-                return false;
             }
-            move(1, 0);
-            return true;
+            else
+            {
+                move(1, 0);
+                return true;
+            }
         }
     }
     else if (rotation == LEFT)
@@ -167,10 +178,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_L;
                 maze[IDX2D(x - 1, y)] |= WALL_R;
-                return false;
             }
-            move(-1, 0);
-            return true;
+            else
+            {
+                move(-1, 0);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
@@ -180,10 +193,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
-                return false;
             }
-            move(0, 1);
-            return true;
+            else
+            {
+                move(0, 1);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
@@ -193,10 +208,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x, y - 1)] |= WALL_U;
-                return false;
             }
-            move(0, -1);
-            return true;
+            else
+            {
+                move(0, -1);
+                return true;
+            }
         }
     }
     else // RIGHT
@@ -208,12 +225,13 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x + 1, y)] |= WALL_L;
-                return false;
             }
-            move(1, 0);
-            return true;
+            else
+            {
+                move(1, 0);
+                return true;
+            }
         }
-
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
@@ -221,10 +239,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_D;
                 maze[IDX2D(x, y - 1)] |= WALL_U;
-                return false;
             }
-            move(0, -1);
-            return true;
+            else
+            {
+                move(0, -1);
+                return true;
+            }
         }
 
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
@@ -234,10 +254,12 @@ bool explore()
             {
                 maze[IDX2D(x, y)] |= WALL_U;
                 maze[IDX2D(x, y + 1)] |= WALL_D;
-                return false;
             }
-            move(0, 1);
-            return true;
+            else
+            {
+                move(0, 1);
+                return true;
+            }
         }
     }
     return false;
