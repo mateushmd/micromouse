@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
+#include <ostream>
 
 #define MAZE_DIMENSIONS 16
 #define MAZE_SIZE 256
@@ -20,8 +21,10 @@
 #define DOWN 2
 #define LEFT 3
 
-#define target_x 7
-#define target_y 7
+#define target_x1 7
+#define target_y1 7
+#define target_x2 8
+#define target_y2 8
 
 uint8_t maze[MAZE_SIZE] = {
     WALL_D | WALL_L, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D | WALL_R,
@@ -57,11 +60,11 @@ void updateWalls (uint8_t x, uint8_t y, uint8_t facing) {
 	bool back = api.wallBack();
 
 	if (facing == RIGHT) {
-		bool tmp = left;
+		bool tmp = right;
 		right = front;
 		front = left;
 		left = back;
-		back = left;
+		back = tmp;
 	}
 
 	if (facing == LEFT) {
@@ -135,7 +138,6 @@ void paintWalls () {
 		}
 	}
 }
-
 struct Node {
 	uint8_t x;
 	uint8_t y;
@@ -150,17 +152,55 @@ struct Node {
 	Node (uint8_t x, uint8_t y) {
 		this->x = x;
 		this->y = y;
-		this->dist = heuristic(x, y, target_x, target_y);
+
+		uint8_t h1 = heuristic(x, y, target_x1, target_y1);
+		uint8_t h2 = heuristic(x, y, target_x2, target_y1);
+		uint8_t h3 = heuristic(x, y, target_x1, target_y2);
+		uint8_t h4 = heuristic(x, y, target_x2, target_y2);
+
+		if (h1 > h2) {
+			h1 = h2;
+		}
+		if (h1 > h3) {
+			h1 = h3;
+		}
+		if (h1 > h4) {
+			h1 = h4;
+		}
+
+		this->dist = h1;
 	}
 
 	~Node() = default;
 };
 
-void sort (Node* prio_queue, int pi) {
+
+
+void sort (Node* prio_queue, int pi, Node pos, uint8_t facing) {
+
+	int i = 1;
+	uint8_t dir = 4;
+
 	for (int i = 1; i < pi; i++) {
 		Node tmp = prio_queue[i];
 		int j = i-1;
-		while ( (j>=0) && (prio_queue[j].dist > tmp.dist)) {
+
+		if (heuristic(pos.x, pos.y, tmp.x, tmp.y) == 1) {
+			if (prio_queue[i].x > pos.x) {
+				dir = RIGHT;
+			}
+			if (prio_queue[i].x < pos.x) {
+				dir = LEFT;
+			}
+			if (prio_queue[i].y > pos.y) {
+				dir = UP;
+			}
+			if (prio_queue[i].y < pos.y) {
+				dir = DOWN;
+			}
+		}
+
+		while ( j>=0 && ( (prio_queue[j].dist > tmp.dist) || (prio_queue[j].dist == tmp.dist && dir == facing) ) ) {
 			prio_queue[j+1] = prio_queue[j];
 			j--;
 		}
@@ -178,7 +218,68 @@ bool wasVisited (Node* visited, int vi, Node u) {
 	return (status);
 }
 
+void move(uint8_t* x, uint8_t* y, uint8_t* facing, Node next) {
+
+	API api;
+	if (next.x > *x) {
+		while (*facing != RIGHT) {
+			api.turnRight();
+			*facing += 1;
+			if (*facing > 3) {
+				*facing = 0;
+			}
+		}
+	}
+	if (next.x < *x) {
+		while (*facing != LEFT) {
+			api.turnRight();
+			*facing += 1;
+			if (*facing > 3) {
+				*facing = 0;
+			}
+		}
+	}
+	if (next.y > *y) {
+		while (*facing != UP) {
+			api.turnRight();
+			*facing += 1;
+			if (*facing > 3) {
+				*facing = 0;
+			}
+		}
+	}
+	if (next.y < *y) {
+		while (*facing != DOWN) {
+			api.turnRight();
+			*facing += 1;
+			if (*facing > 3) {
+				*facing = 0;
+			}
+		}
+	}
+	api.moveForward();
+
+	*x = next.x;
+	*y = next.y;
+}
+
+bool shouldReturn(Node u, Node next) {
+
+	bool ret = false;
+	uint8_t h = heuristic(u.x, u.y, next.x, next.y);
+
+	if (h > 1) {
+		ret = true;
+	}
+	std::cerr << "ux: " << (int)u.x << std::endl;
+	std::cerr << "uy: " << (int)u.y << std::endl;
+	std::cerr << "shouldRet: " << ret << std::endl;
+	return (ret);
+}
+
 void astar() {
+
+	API api;
 
 	uint8_t facing = UP;
 
@@ -186,20 +287,22 @@ void astar() {
 	uint8_t y = 0;
 
 	Node prio_queue [64] = {Node(x, y)};
-	int pi = 1;
+	int prio_i = 1;
 
 	Node visited [MAZE_SIZE];
 	int vi = 0;
 
+	Node path [128];
+	int path_i = 0;
 
-	while (x != target_x || y != target_y) {
+	while ( (x != target_x1 && x != target_x2) || (y != target_y1 && y != target_x2)) {
 
 		updateWalls(x, y, facing);
 		paintWalls();
 
 		Node u = prio_queue[0];
-		pi--;
-		for (int i = 0; i < pi; i++) {
+		prio_i--;
+		for (int i = 0; i < prio_i; i++) {
 			prio_queue[i] = prio_queue[i+1];
 		}
 
@@ -209,7 +312,7 @@ void astar() {
 		if ( (maze[IDX2D(u.x, u.y)] & WALL_U) == 0) {
 			Node v = Node(u.x, u.y+1);
 			if (!wasVisited(visited, vi, v)) {
-				prio_queue[pi++] = v;
+				prio_queue[prio_i++] = v;
 			}
 		}
 
@@ -217,7 +320,7 @@ void astar() {
 		if ((maze[IDX2D(u.x, u.y)] & WALL_D) == 0) {
 			Node v = Node(u.x, u.y-1);
 			if (!wasVisited(visited, vi, v)) {
-				prio_queue[pi++] = v;
+				prio_queue[prio_i++] = v;
 			}
 		}
 
@@ -225,7 +328,7 @@ void astar() {
 		if ((maze[IDX2D(u.x, u.y)] & WALL_L) == 0) {
 			Node v = Node(u.x-1, u.y);
 			if (!wasVisited(visited, vi, v)) {
-				prio_queue[pi++] = v;
+				prio_queue[prio_i++] = v;
 			}
 		}
 
@@ -233,65 +336,30 @@ void astar() {
 		if ((maze[IDX2D(u.x, u.y)] & WALL_R) == 0) {
 			Node v = Node(u.x+1, u.y);
 			if (!wasVisited(visited, vi, v)) {
-				prio_queue[pi++] = v;
+				prio_queue[prio_i++] = v;
 			}
 		}
 
-		sort(prio_queue, pi);
+		sort(prio_queue, prio_i, u, facing);
 
-		if (prio_queue[0].dist == prio_queue[1].dist) {
-			std::cerr << "other path" << std::endl;
-		}
+		Node next = prio_queue[0];
 
-		uint8_t new_x = prio_queue[0].x;
-		uint8_t new_y = prio_queue[0].y;
+		while (path_i > 0 && shouldReturn(u, next)) {
+			move(&u.x, &u.y, &facing, path[--path_i]);
+		} 
+		path[path_i++] = u;
 
-		std::fprintf(stderr, "nx: %d\nny: %d\nfacing: %d\n", new_x, new_y, facing);
+		for (int i = 0; i < path_i; i++) {
+			std::fprintf(stderr, "(%d, %d)", path[i].x, path[i].y);
+		}
+		std::cerr << std::endl;
 
-		API api;
-		if (new_x > x) {
-			while (facing != RIGHT) {
-				api.turnRight();
-				facing += 1;
-				if (facing > 3) {
-					facing = 0;
-				}
-			}
-			api.moveForward();
-		}
-		if (new_x < x) {
-			while (facing != LEFT) {
-				api.turnRight();
-				facing += 1;
-				if (facing > 3) {
-					facing = 0;
-				}
-			}
-			api.moveForward();
-		}
-		if (new_y > y) {
-			while (facing != UP) {
-				api.turnRight();
-				facing += 1;
-				if (facing > 3) {
-					facing = 0;
-				}
-			}
-			api.moveForward();
-		}
-		if (new_y < y) {
-			while (facing != DOWN) {
-				api.turnRight();
-				facing += 1;
-				if (facing > 3) {
-					facing = 0;
-				}
-			}
-			api.moveForward();
-		}
+		std::fprintf(stderr, "nx: %d\nny: %d\nfacing: %d\n", next.x, next.y, facing);
+		std::cerr << "dist: " << (int)next.dist << std::endl;
 
-		x = new_x;
-		y = new_y;
-		std::cerr << "dist: " << (int)prio_queue[0].dist << std::endl;
+		move(&u.x, &u.y, &facing, next);
+
+		x = u.x;
+		y = u.y;
 	}
 }
