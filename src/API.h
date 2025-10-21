@@ -10,6 +10,7 @@ public:
     static int mazeHeight();
 
     static bool wallFront();
+    static bool wallBack();
     static bool wallRight();
     static bool wallLeft();
 

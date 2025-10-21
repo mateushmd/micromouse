@@ -24,6 +24,13 @@ bool API::wallFront() {
     return response == "true";
 }
 
+bool API::wallBack() {
+    std::cout << "wallBack" << std::endl;
+    std::string response;
+    std::cin >> response;
+    return response == "true";
+}
+
 bool API::wallRight() {
     std::cout << "wallRight" << std::endl;
     std::string response;
