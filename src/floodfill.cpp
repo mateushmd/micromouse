@@ -13,9 +13,9 @@
 #define WALL_R 0b1000
 
 #define UP 0
-#define DOWN 0
-#define LEFT 0
-#define RIGHT 0
+#define RIGHT 1
+#define DOWN 2
+#define LEFT 3
 
 // clang-format off
 uint8_t flood[] = {
@@ -68,15 +68,28 @@ bool checkSensorLeft() { return false; }
 bool checkSensorRight() { return false; }
 
 void reflood() {
-
+    bool changed = true;
+    while(changed)
+    {
+        for(int i = 0; i < MAZE_DIMENSIONS; i++)
+        {
+            for(int j = 0; j < MAZE_DIMENSIONS; j++)
+            {
+            }
+        }
+    }
 }
 
 void move(uint8_t vx, uint8_t vy) {}
 
 bool explore()
 {
+    uint8_t lowest = UINT8_MAX;
     if (rotation == UP)
     {
+        if (flood[IDX2D(x, y + 1)] < lowest)
+            lowest = flood[IDX2D(x, y + 1)];
+
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
         {
@@ -92,6 +105,9 @@ bool explore()
             }
         }
 
+        if (flood[IDX2D(x + 1, y)] < lowest)
+            lowest = flood[IDX2D(x, y + 1)];
+
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
         {
@@ -106,6 +122,9 @@ bool explore()
                 return true;
             }
         }
+
+        if (flood[IDX2D(x - 1, y)] < lowest)
+            lowest = flood[IDX2D(x - 1, y)];
 
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
@@ -124,6 +143,9 @@ bool explore()
     }
     else if (rotation == DOWN)
     {
+        if (flood[IDX2D(x, y - 1)] < lowest)
+            lowest = flood[IDX2D(x, y - 1)];
+
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
@@ -139,6 +161,9 @@ bool explore()
             }
         }
 
+        if (flood[IDX2D(x - 1, y)] < lowest)
+            lowest = flood[IDX2D(x - 1, y)];
+
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
         {
@@ -153,6 +178,9 @@ bool explore()
                 return true;
             }
         }
+
+        if (flood[IDX2D(x + 1, y)] < lowest)
+            lowest = flood[IDX2D(x + 1, y)];
 
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
@@ -171,6 +199,10 @@ bool explore()
     }
     else if (rotation == LEFT)
     {
+
+        if (flood[IDX2D(x - 1, y)] < lowest)
+            lowest = flood[IDX2D(x - 1, y)];
+
         if (!(maze[IDX2D(x, y)] & WALL_L) &&
             flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
         {
@@ -186,6 +218,9 @@ bool explore()
             }
         }
 
+        if (flood[IDX2D(x, y + 1)] < lowest)
+            lowest = flood[IDX2D(x, y + 1)];
+
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
         {
@@ -200,6 +235,9 @@ bool explore()
                 return true;
             }
         }
+
+        if (flood[IDX2D(x, y - 1)] < lowest)
+            lowest = flood[IDX2D(x, y - 1)];
 
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
@@ -218,6 +256,9 @@ bool explore()
     }
     else // RIGHT
     {
+        if (flood[IDX2D(x + 1, y)] < lowest)
+            lowest = flood[IDX2D(x + 1, y)];
+
         if (!(maze[IDX2D(x, y)] & WALL_R) &&
             flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
         {
@@ -232,6 +273,10 @@ bool explore()
                 return true;
             }
         }
+
+        if (flood[IDX2D(x, y - 1)] < lowest)
+            lowest = flood[IDX2D(x, y - 1)];
+
         if (!(maze[IDX2D(x, y)] & WALL_D) &&
             flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
         {
@@ -246,6 +291,9 @@ bool explore()
                 return true;
             }
         }
+
+        if (flood[IDX2D(x, y + 1)] < lowest)
+            lowest = flood[IDX2D(x, y + 1)];
 
         if (!(maze[IDX2D(x, y)] & WALL_U) &&
             flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
@@ -262,6 +310,7 @@ bool explore()
             }
         }
     }
+    maze[IDX2D(x, y)] = lowest + 1;
     return false;
 }
 
