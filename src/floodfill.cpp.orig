@@ -79,8 +79,11 @@ void move(uint8_t vx, uint8_t vy) {}
 
 bool explore()
 {
+<<<<<<< HEAD
     uint8_t lowest = UINT8_MAX;
-    API api;
+=======
+	API api;
+>>>>>>> origin/flood-fill-sim
     if (rotation == UP)
     {
         if (flood[IDX2D(x, y + 1)] < lowest)
