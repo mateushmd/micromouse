@@ -1,17 +1,15 @@
-#include "micromouse.hpp"
+#include "floodfill.hpp"
 #include "API.h"
 #include <cstdint>
 #include <iostream>
+#include <string>
 
-#define MAZE_DIMENSIONS 16
-#define MAZE_SIZE 256
-#define HALF_MAZE_SIZE 8
-#define IDX2D(x, y) ((x) + (y) * MAZE_DIMENSIONS)
+#define MAZE_DIMENSION 16
 
-#define WALL_U 0b0001
-#define WALL_D 0b0010
-#define WALL_L 0b0100
-#define WALL_R 0b1000
+#define W_U 0b0001
+#define W_D 0b0010
+#define W_L 0b0100
+#define W_R 0b1000
 
 #define UP 0
 #define RIGHT 1
@@ -19,323 +17,226 @@
 #define LEFT 3
 
 // clang-format off
-uint8_t flood[] = {
-    14, 13, 12, 11, 10, 9,  8,  7,  7,  8,  9,  10, 11, 12, 13, 14, 
-    13, 12, 11, 10, 9,  8,  7,  6,  6,  7,  8,  9,  10, 11, 12, 13, 
-    12, 11, 10, 9,  8,  7,  6,  5,  5,  6,  7,  8,  9,  10, 11, 12, 
-    11, 10, 9,  8,  7,  6,  5,  4,  4,  5,  6,  7,  8,  9,  10, 11, 
-    10, 9,  8,  7,  6,  5,  4,  3,  3,  4,  5,  6,  7,  8,  9,  10, 
-    9,  8,  7,  6,  5,  4,  3,  2,  2,  3,  4,  5,  6,  7,  8,  9,  
-    8,  7,  6,  5,  4,  3,  2,  1,  1,  2,  3,  4,  5,  6,  7,  8,  
-    7,  6,  5,  4,  3,  2,  1,  0,  0,  1,  2,  3,  4,  5,  6,  7,  
-    7,  6,  5,  4,  3,  2,  1,  0,  0,  1,  2,  3,  4,  5,  6,  7,  
-    8,  7,  6,  5,  4,  3,  2,  1,  1,  2,  3,  4,  5,  6,  7,  8,  
-    9,  8,  7,  6,  5,  4,  3,  2,  2,  3,  4,  5,  6,  7,  8,  9,  
-    10, 9,  8,  7,  6,  5,  4,  3,  3,  4,  5,  6,  7,  8,  9,  10, 
-    11, 10, 9,  8,  7,  6,  5,  4,  4,  5,  6,  7,  8,  9,  10, 11, 
-    12, 11, 10, 9,  8,  7,  6,  5,  5,  6,  7,  8,  9,  10, 11, 12, 
-    13, 12, 11, 10, 9,  8,  7,  6,  6,  7,  8,  9,  10, 11, 12, 13, 
-    14, 13, 12, 11, 10, 9,  8,  7,  7,  8,  9,  10, 11, 12, 13, 14
+uint8_t flood[16][16] = {
+    {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14},
+    {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
+    {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
+    {11, 10,  9,  8,  7,  6,  5,  4,  4,  5,  6,  7,  8,  9, 10, 11},
+    {10,  9,  8,  7,  6,  5,  4,  3,  3,  4,  5,  6,  7,  8,  9, 10},
+    { 9,  8,  7,  6,  5,  4,  3,  2,  2,  3,  4,  5,  6,  7,  8,  9},
+    { 8,  7,  6,  5,  4,  3,  2,  1,  1,  2,  3,  4,  5,  6,  7,  8},
+    { 7,  6,  5,  4,  3,  2,  1,  0,  0,  1,  2,  3,  4,  5,  6,  7},
+    { 7,  6,  5,  4,  3,  2,  1,  0,  0,  1,  2,  3,  4,  5,  6,  7},
+    { 8,  7,  6,  5,  4,  3,  2,  1,  1,  2,  3,  4,  5,  6,  7,  8},
+    { 9,  8,  7,  6,  5,  4,  3,  2,  2,  3,  4,  5,  6,  7,  8,  9},
+    {10,  9,  8,  7,  6,  5,  4,  3,  3,  4,  5,  6,  7,  8,  9, 10},
+    {11, 10,  9,  8,  7,  6,  5,  4,  4,  5,  6,  7,  8,  9, 10, 11},
+    {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
+    {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
+    {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14}
 };
 
-uint8_t maze[MAZE_SIZE] = {
-    WALL_U | WALL_L, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U, WALL_U | WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_L,          0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      WALL_R,
-    WALL_D | WALL_L, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D, WALL_D | WALL_R,
+uint8_t maze[16][16] = {
+    {W_D | W_L, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D, W_D | W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_L,         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,       W_R},
+    {W_U | W_L, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U, W_U | W_R}
 };
 // clang-format on
+
+const int8_t dx[] = {0, 1, 0, -1};
+const int8_t dy[] = {1, 0, -1, 0};
+const uint8_t mouseWall[] = {W_U, W_R, W_D, W_L};
+const uint8_t neighborWall[] = {W_D, W_L, W_U, W_R};
 
 uint8_t x = 0;
 uint8_t y = 0;
 uint8_t rotation = UP;
 
-void reflood() {
+API api;
+
+void reflood()
+{
     bool changed = true;
-    while(changed)
+    while (changed)
     {
-        for(int i = 0; i < MAZE_DIMENSIONS; i++)
+        changed = false;
+        for (int y = 0; y < MAZE_DIMENSION; y++)
         {
-            for(int j = 0; j < MAZE_DIMENSIONS; j++)
+            for (int x = 0; x < MAZE_DIMENSION; x++)
             {
+                if (flood[x][y] == 0)
+                    continue;
+
+                uint8_t lowest = UINT8_MAX;
+
+                if (y + 1 < MAZE_DIMENSION && !(maze[x][y] & W_U))
+                    lowest =
+                        (flood[x][y + 1] < lowest) ? flood[x][y + 1] : lowest;
+                if (y - 1 > -1 && !(maze[x][y] & W_D))
+                    lowest =
+                        (flood[x][y - 1] < lowest) ? flood[x][y - 1] : lowest;
+                if (x + 1 < MAZE_DIMENSION && !(maze[x][y] & W_R))
+                    lowest =
+                        (flood[x + 1][y] < lowest) ? flood[x + 1][y] : lowest;
+                if (x - 1 > -1 && !(maze[x][y] & W_L))
+                    lowest =
+                        (flood[x - 1][y] < lowest) ? flood[x - 1][y] : lowest;
+
+                if (lowest == 255)
+                    continue;
+
+                if (flood[x][y] != lowest + 1)
+                {
+                    flood[x][y] = lowest + 1;
+                    changed = true;
+                }
             }
         }
     }
 }
 
-void move(uint8_t vx, uint8_t vy) {}
-
-bool explore()
+bool move()
 {
-    uint8_t lowest = UINT8_MAX;
-    API api;
-    if (rotation == UP)
+    uint8_t lowest_neighbor_val = 255;
+    for (int d = 0; d < 4; d++)
     {
-        if (flood[IDX2D(x, y + 1)] < lowest)
-            lowest = flood[IDX2D(x, y + 1)];
+        int nx = x + dx[d];
+        int ny = y + dy[d];
 
-        if (!(maze[IDX2D(x, y)] & WALL_U) &&
-            flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
+        if (nx < 0 || nx >= MAZE_DIMENSION || ny < 0 || ny >= MAZE_DIMENSION)
+            continue;
+        if (maze[x][y] & mouseWall[d])
+            continue;
+
+        if (flood[nx][ny] < lowest_neighbor_val)
         {
-            if (api.wallFront())
-            {
-                maze[IDX2D(x, y)] |= WALL_U;
-                maze[IDX2D(x, y + 1)] |= WALL_D;
-            }
-            else
-            {
-				// Go up
-				api.moveForward();
-                return true;
-            }
-        }
-
-        if (flood[IDX2D(x + 1, y)] < lowest)
-            lowest = flood[IDX2D(x, y + 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_R) &&
-            flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
-        {
-            if (api.wallRight())
-            {
-                maze[IDX2D(x, y)] |= WALL_R;
-                maze[IDX2D(x + 1, y)] |= WALL_L;
-            }
-            else
-            {
-				// Go to the right 
-				api.turnRight();
-				api.moveForward();
-                return true;
-            }
-        }
-
-        if (flood[IDX2D(x - 1, y)] < lowest)
-            lowest = flood[IDX2D(x - 1, y)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_L) &&
-            flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
-        {
-            if (api.wallLeft())
-            {
-                maze[IDX2D(x, y)] |= WALL_L;
-                maze[IDX2D(x - 1, y)] |= WALL_R;
-            }
-            else
-            {
-				// Go to the left
-				api.turnLeft();
-				api.moveForward();
-                return true;
-            }
+            lowest_neighbor_val = flood[nx][ny];
         }
     }
-    else if (rotation == DOWN)
+
+    uint8_t dir_forward = rotation;
+    uint8_t dir_right = (rotation + 1) % 4;
+    uint8_t dir_left = (rotation + 3) % 4;
+
+    int nx = x + dx[dir_forward];
+    int ny = y + dy[dir_forward];
+
+    std::cerr << nx << " " << ny << std::endl;
+    std::cerr << static_cast<int>(flood[x][y]) << " "
+              << static_cast<int>(flood[nx][ny]) << std::endl;
+    std::cerr << static_cast<int>(W_D) << " | " << static_cast<int>(W_L)
+              << " = " << static_cast<int>(W_D | W_L) << std::endl;
+    std::cerr << static_cast<int>(maze[x][y]) << " & "
+              << static_cast<int>(mouseWall[dir_forward]) << " = "
+              << static_cast<int>(maze[x][y] & mouseWall[dir_forward])
+              << std::endl;
+    if (!(maze[x][y] & mouseWall[dir_forward]) && flood[nx][ny] < flood[x][y])
     {
-        if (flood[IDX2D(x, y - 1)] < lowest)
-            lowest = flood[IDX2D(x, y - 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_D) &&
-            flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
+        std::cerr << "moving front" << std::endl;
+        if (api.wallFront())
         {
-			if (api.wallFront()) {
-				maze[IDX2D(x, y)] |= WALL_D;
-				maze[IDX2D(x, y - 1)] |= WALL_U;
-            } else {
-				// Go down
-				api.moveForward();
-				return true;
-            }
+            maze[x][y] |= mouseWall[dir_forward];
+            maze[nx][ny] |= neighborWall[dir_forward];
         }
-
-        if (flood[IDX2D(x - 1, y)] < lowest)
-            lowest = flood[IDX2D(x - 1, y)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_R) &&
-            flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
+        else
         {
-            if (api.wallRight())
-            {
-                maze[IDX2D(x, y)] |= WALL_L;
-                maze[IDX2D(x - 1, y)] |= WALL_R;
-            }
-            else
-            {
-				// Go to the left
-				api.turnRight();
-				api.moveForward();
-                return true;
-            }
-        }
+            api.moveForward();
+            x = nx;
+            y = ny;
 
-        if (flood[IDX2D(x + 1, y)] < lowest)
-            lowest = flood[IDX2D(x + 1, y)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_L) &&
-            flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
-        {
-            if (api.wallLeft())
-            {
-                maze[IDX2D(x, y)] |= WALL_R;
-                maze[IDX2D(x + 1, y)] |= WALL_L;
-            }
-            else
-            {
-				// Go to the right
-				api.turnLeft();
-				api.moveForward();
-                return true;
-            }
+            return true;
         }
     }
-    else if (rotation == LEFT)
+
+    nx = x + dx[dir_right];
+    ny = y + dy[dir_right];
+    if (!(maze[x][y] & mouseWall[dir_right]) && flood[nx][ny] < flood[x][y])
     {
-
-        if (flood[IDX2D(x - 1, y)] < lowest)
-            lowest = flood[IDX2D(x - 1, y)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_L) &&
-            flood[IDX2D(x - 1, y)] < flood[IDX2D(x, y)])
+        std::cerr << "moving right" << std::endl;
+        if (api.wallRight())
         {
-            if (api.wallFront())
-            {
-                maze[IDX2D(x, y)] |= WALL_L;
-                maze[IDX2D(x - 1, y)] |= WALL_R;
-            }
-            else
-            {
-				// Go to the left
-				api.moveForward();
-                return true;
-            }
+            maze[x][y] |= mouseWall[dir_right];
+            maze[nx][ny] |= neighborWall[dir_right];
         }
-
-        if (flood[IDX2D(x, y + 1)] < lowest)
-            lowest = flood[IDX2D(x, y + 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_U) &&
-            flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
+        else
         {
-            if (api.wallRight())
-            {
-                maze[IDX2D(x, y)] |= WALL_U;
-                maze[IDX2D(x, y + 1)] |= WALL_D;
-            }
-            else
-            {
-				// Go up
-				api.turnRight();
-				api.moveForward();
-                return true;
-            }
-        }
-
-        if (flood[IDX2D(x, y - 1)] < lowest)
-            lowest = flood[IDX2D(x, y - 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_D) &&
-            flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
-        {
-            if (api.wallLeft())
-            {
-                maze[IDX2D(x, y)] |= WALL_D;
-                maze[IDX2D(x, y - 1)] |= WALL_U;
-            }
-            else
-            {
-				// Go down
-				api.turnLeft();
-				api.moveForward();
-                return true;
-            }
+            api.turnRight();
+            api.moveForward();
+            x = nx;
+            y = ny;
+            rotation = dir_right;
+            return true;
         }
     }
-    else // RIGHT
+
+    nx = x + dx[dir_left];
+    ny = y + dy[dir_left];
+    if (!(maze[x][y] & mouseWall[dir_left]) && flood[nx][ny] < flood[x][y])
     {
-        if (flood[IDX2D(x + 1, y)] < lowest)
-            lowest = flood[IDX2D(x + 1, y)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_R) &&
-            flood[IDX2D(x + 1, y)] < flood[IDX2D(x, y)])
+        std::cerr << "moving left" << std::endl;
+        if (api.wallLeft())
         {
-            if (api.wallFront())
-            {
-                maze[IDX2D(x, y)] |= WALL_D;
-                maze[IDX2D(x + 1, y)] |= WALL_L;
-            }
-            else
-            {
-				// Go to the right
-				api.moveForward();
-                return true;
-            }
+            maze[x][y] |= mouseWall[dir_left];
+            maze[nx][ny] |= neighborWall[dir_left];
         }
-
-        if (flood[IDX2D(x, y - 1)] < lowest)
-            lowest = flood[IDX2D(x, y - 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_D) &&
-            flood[IDX2D(x, y - 1)] < flood[IDX2D(x, y)])
+        else
         {
-            if (api.wallRight())
-            {
-                maze[IDX2D(x, y)] |= WALL_D;
-                maze[IDX2D(x, y - 1)] |= WALL_U;
-            }
-            else
-            {
-				// Go down
-				api.turnRight();
-				api.moveForward();
-                return true;
-            }
-        }
-
-        if (flood[IDX2D(x, y + 1)] < lowest)
-            lowest = flood[IDX2D(x, y + 1)];
-
-        if (!(maze[IDX2D(x, y)] & WALL_U) &&
-            flood[IDX2D(x, y + 1)] < flood[IDX2D(x, y)])
-        {
-            if (api.wallLeft())
-            {
-                maze[IDX2D(x, y)] |= WALL_U;
-                maze[IDX2D(x, y + 1)] |= WALL_D;
-            }
-            else
-            {
-				// Go up
-				api.turnLeft();
-				api.moveForward();
-                return true;
-            }
+            api.turnLeft();
+            api.moveForward();
+            x = nx;
+            y = ny;
+            rotation = dir_left;
+            return true;
         }
     }
-    maze[IDX2D(x, y)] = lowest + 1;
+
+    if (lowest_neighbor_val != 255)
+    {
+        flood[x][y] = lowest_neighbor_val + 1;
+    }
+
+    std::cerr << "moving back" << std::endl;
+    uint8_t dir_back = (rotation + 2) % 4;
+    nx = x + dx[dir_back];
+    ny = y + dy[dir_back];
+
+    api.turnRight();
+    api.turnRight();
+    api.moveForward();
+
+    x = nx;
+    y = ny;
+    rotation = dir_back;
+
     return false;
 }
 
-void printMaze()
+void start()
 {
-    for (int i = 0; i < MAZE_DIMENSIONS; i++)
+    for (int i = 0; i < MAZE_DIMENSION; i++)
     {
-        for (int j = 0; j < MAZE_DIMENSIONS; j++)
-     {
-            std::cerr << (int)flood[IDX2D(i, j)] << ", ";
-            std::cout << "setText " << i << " " << j << " " << (int) flood[IDX2D(i, j)] << std::endl;
+        for (int j = 0; j < MAZE_DIMENSION; j++)
+        {
+            api.setText(i, j, std::to_string(static_cast<int>(flood[i][j])));
         }
-        std::cerr << std::endl;
     }
+}
+
+void tick()
+{
+    if (!move())
+        reflood();
 }
