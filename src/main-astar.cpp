@@ -1,6 +1,6 @@
 #include "API.h"
 #include "micromouse.hpp"
-#include <cstdio>
+#include <iostream>
 
 #define MAZE_DIMENSIONS 16
 #define MAZE_SIZE 256
@@ -97,10 +97,8 @@ void paintWalls () {
 	}
 }
 
-bool checkWalls (byte x, byte y, byte facing) {
+void updateWalls (byte x, byte y, byte facing) {
 	API api;
-
-	bool res = true;
 	if (api.wallFront()) {
 		byte wall = 0;
 		if (facing == UP) wall = WALL_U; 
@@ -114,8 +112,6 @@ bool checkWalls (byte x, byte y, byte facing) {
 		else if (wall == WALL_D) maze[IDX2D(x, y-1)] |= WALL_U;
 		else if (wall == WALL_R) maze[IDX2D(x+1, y)] |= WALL_L;
 		else if (wall == WALL_L) maze[IDX2D(x-1, y)] |= WALL_R;
-
-		res = false;
 	}
 	if (api.wallLeft()) {
 		byte wall = 0;
@@ -143,11 +139,20 @@ bool checkWalls (byte x, byte y, byte facing) {
 		maze[IDX2D(x, y)] |= wall;
 
 		if (wall == WALL_U) maze[IDX2D(x, y+1)] |= WALL_D; 
-		else if (wall == WALL_R) maze[IDX2D(x+1, y)] |= WALL_L; 
-		else if (wall == WALL_R) maze[IDX2D(x-1, y)] |= WALL_R; 
 		else if (wall == WALL_D) maze[IDX2D(x, y-1)] |= WALL_U;
-
+		else if (wall == WALL_R) maze[IDX2D(x+1, y)] |= WALL_L; 
+		else if (wall == WALL_L) maze[IDX2D(x-1, y)] |= WALL_R; 
 	}
+}
+
+bool checkWalls (byte x, byte y, byte dir) {
+
+	bool res = false;
+	if ((dir == UP && (maze[IDX2D(x, y)] & WALL_U) == 0)
+	 	|| (dir == DOWN && (maze[IDX2D(x, y)] & WALL_D) == 0)
+	 	|| (dir == RIGHT && (maze[IDX2D(x, y)] & WALL_R) == 0)
+	 	|| (dir == LEFT && (maze[IDX2D(x, y)] & WALL_L) == 0)
+	   ) res = true;
 
 	return (res);
 }
@@ -161,37 +166,48 @@ int main()
 	api.setColor(8, 7, 'R');
 	api.setColor(8, 8, 'R');
 
-	byte facing = UP;
-	byte x = 0;
-	byte y = 0;
 	byte target_x = 7;
 	byte target_y = 7;
 
+	byte cur_run = 0;
+	byte prev_run = 1;
+
 	Path path = astar(maze, 0, 0, target_x, target_y);
 
-	int i = 1;
+	while (cur_run != prev_run) {
 
-	while (i < path.i) {
+		path = astar(maze, 0, 0, target_x, target_y);
+		byte facing = UP;
+		byte x = 0;
+		byte y = 0;
+		int i = 1;
+		prev_run = cur_run;
 
-		paintWalls();
+		while (i < path.i) {
 
-		Node v = path.arr[i++];
-		std::fprintf(stderr, "[%d, %d]", v.x, v.y);
+			Node v = path.arr[i++];
 
-		byte dir = get_direction(x, y, v.x, v.y);
-		face_direction(&facing, dir);
+			updateWalls(x, y, facing);
+			byte dir = get_direction(x, y, v.x, v.y);
+			bool can_move = checkWalls(x, y, dir);
+			paintWalls();
 
-		bool can_move = checkWalls(x, y, facing);
-
-		if (can_move) {
-			api.moveForward();
-			x = v.x;
-			y = v.y;
-		} else {
-			api.clearAllText();
-			path.update(astar(maze, x, y, target_x, target_y), --i);
+			if (can_move) {
+				face_direction(&facing, dir);
+				api.moveForward();
+				x = v.x;
+				y = v.y;
+			} else {
+				api.clearAllText();
+				path.update(astar(maze, x, y, target_x, target_y), --i);
+			}
 		}
+		cur_run = path.i;
+		api.clearAllText();
+		api.ackReset();
 	}
-
+	std::cerr << "min: " << (int)path.i << std::endl;
+	std::cerr << "path: \n";
+	path.print();
     return 0;
 }
