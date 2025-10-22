@@ -19,7 +19,9 @@ struct Path {
 	}
 
 	void insert (Node u) {
-		this->arr[i++] = u;
+		if (i < n) {
+			this->arr[i++] = u;
+		}
 	}
 
 	void invert (void) {

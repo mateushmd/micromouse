@@ -8,10 +8,10 @@
 #define DOWN 2
 #define LEFT 3
 
-#define target_x1 7
-#define target_x2 8
-#define target_y1 7
-#define target_y2 8
+#define target_x1 15
+#define target_x2 15
+#define target_y1 15
+#define target_y2 15
 
 #define byte uint8_t
 

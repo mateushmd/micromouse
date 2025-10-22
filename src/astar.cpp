@@ -1,6 +1,6 @@
 #include <cmath>
-#include <cstdio>
 #include "micromouse.hpp"
+#include <iostream>
 
 #define MAZE_DIMENSIONS 16
 #define IDX2D(x, y) ((x) + (y) * MAZE_DIMENSIONS)
@@ -44,13 +44,13 @@ void sort (Node** prio_queue, int pn) {
 
 Path astar(byte* maze, byte start_x, byte start_y) {
 
-	Node* prio_queue [64] = {nullptr};
+	Node* prio_queue [256] = {nullptr};
 	int prio_n = 0;
 	bool visited[16][16] = {false};
-	int vi = 0;
 
 	Node* goal_node;
-	Node node_pool[255];
+	Node node_pool[500];
+
 	int node_n = 0;
 
 	node_pool[node_n] = Node(start_x, start_y, 0, nullptr);
@@ -61,10 +61,10 @@ Path astar(byte* maze, byte start_x, byte start_y) {
 	while (prio_n > 0) {
 
 		Node* u = prio_queue[0];
-		prio_n--;
 		for (int i = 0; i < prio_n; i++) {
 			prio_queue[i] = prio_queue[i+1];
 		}
+		prio_n--;
 
 		if( (u->x >= target_x1 && u->x <= target_x2) && (u->y >= target_y1 && u->y <= target_y2) ) {
 			goal_node = u;

@@ -181,6 +181,8 @@ int main()
 		while (i < path.i) {
 
 			Node v = path.arr[i++];
+			std::cerr << "----------------------------------------\n";
+			path.print();
 
 			updateWalls(x, y, facing);
 			byte dir = get_direction(x, y, v.x, v.y);
@@ -201,8 +203,6 @@ int main()
 		api.clearAllText();
 		api.ackReset();
 	}
-	std::cerr << "min: " << (int)path.i << std::endl;
-	std::cerr << "path: \n";
 	path.print();
-    return 0;
+	return 0;
 }
