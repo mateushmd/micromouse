@@ -14,6 +14,10 @@ struct Path {
 		this->i = 0;
 	}
 
+	~Path() {
+		delete(arr);
+	}
+
 	void insert (Node u) {
 		this->arr[i++] = u;
 	}

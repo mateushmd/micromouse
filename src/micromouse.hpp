@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include "node.hpp"
 #include "path.hpp"
 
 #define UP 0
@@ -9,8 +8,13 @@
 #define DOWN 2
 #define LEFT 3
 
+#define target_x1 7
+#define target_x2 8
+#define target_y1 7
+#define target_y2 8
+
 #define byte uint8_t
 
 void printMaze();
 bool explore();
-Path astar(byte* maze, byte start_x, byte start_y, byte target_x, byte target_y);
+Path astar(byte* maze, byte start_x, byte start_y);

@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdio>
 #include "micromouse.hpp"
 
 #define MAZE_DIMENSIONS 16
@@ -9,19 +10,19 @@
 #define WALL_L 0b0100
 #define WALL_R 0b1000
 
-// Euclidian Distance # Altered since diagonal moves are not allowed
+// Manhatam distance
 byte heuristic (byte x1, byte y1, byte x2, byte y2) {
 	return ( abs(x2-x1) + abs(y2-y1) );
 }
 
 byte heuristic_center (byte x, byte y) {
 	byte dx = 0;
-	if (x < 7) dx = 7-x;
-	else if (x > 8) dx = x-8;
+	if (x < target_x1) dx = target_x1-x;
+	else if (x > target_x2) dx = x-target_x2;
 
 	byte dy = 0;
-	if (y < 7) dy = 7-y;
-	else if (y > 8) dy = y-8;
+	if (y < target_y1) dy = target_y1-y;
+	else if (y > target_y2) dy = y-target_y2;
 
 	return (dx+dy);
 }
@@ -41,11 +42,10 @@ void sort (Node** prio_queue, int pn) {
 	}
 }
 
-Path astar(byte* maze, byte start_x, byte start_y, byte target_x, byte target_y) {
+Path astar(byte* maze, byte start_x, byte start_y) {
 
 	Node* prio_queue [64] = {nullptr};
 	int prio_n = 0;
-
 	bool visited[16][16] = {false};
 	int vi = 0;
 
@@ -59,14 +59,14 @@ Path astar(byte* maze, byte start_x, byte start_y, byte target_x, byte target_y)
 	Path path(255);
 
 	while (prio_n > 0) {
-		
+
 		Node* u = prio_queue[0];
 		prio_n--;
 		for (int i = 0; i < prio_n; i++) {
 			prio_queue[i] = prio_queue[i+1];
 		}
 
-		if( (u->x == 7 || u->x == 8) && (u->y == 7 || u->y == 8) ) {
+		if( (u->x >= target_x1 && u->x <= target_x2) && (u->y >= target_y1 && u->y <= target_y2) ) {
 			goal_node = u;
 			prio_n = 0;
 		} else {
@@ -107,6 +107,7 @@ Path astar(byte* maze, byte start_x, byte start_y, byte target_x, byte target_y)
 			sort(prio_queue, prio_n);
 		}
 	}
+
 	if (goal_node) {
 		Node* current = goal_node;
 		while (current) {

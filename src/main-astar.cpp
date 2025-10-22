@@ -166,22 +166,17 @@ int main()
 	api.setColor(8, 7, 'R');
 	api.setColor(8, 8, 'R');
 
-	byte target_x = 7;
-	byte target_y = 7;
+	byte I = 0;
+	byte n = 90;
+	Path path = astar(maze, 0, 0);
 
-	byte cur_run = 0;
-	byte prev_run = 1;
+	while (I < n) {
 
-	Path path = astar(maze, 0, 0, target_x, target_y);
-
-	while (cur_run != prev_run) {
-
-		path = astar(maze, 0, 0, target_x, target_y);
+		path = astar(maze, 0, 0);
 		byte facing = UP;
 		byte x = 0;
 		byte y = 0;
 		int i = 1;
-		prev_run = cur_run;
 
 		while (i < path.i) {
 
@@ -199,10 +194,10 @@ int main()
 				y = v.y;
 			} else {
 				api.clearAllText();
-				path.update(astar(maze, x, y, target_x, target_y), --i);
+				path.update(astar(maze, x, y), --i);
 			}
 		}
-		cur_run = path.i;
+		I++;
 		api.clearAllText();
 		api.ackReset();
 	}
