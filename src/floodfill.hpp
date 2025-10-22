@@ -1,4 +1,5 @@
 #pragma once
 
 void start();
-void tick();
+bool tick();
+void reset();
