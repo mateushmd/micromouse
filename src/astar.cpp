@@ -43,7 +43,7 @@ void sort (Node** prio_queue, int pn) {
 
 Path astar(byte* maze, byte start_x, byte start_y, byte target_x, byte target_y) {
 
-	Node* prio_queue [32] = {nullptr};
+	Node* prio_queue [64] = {nullptr};
 	int prio_n = 0;
 
 	bool visited[16][16] = {false};
