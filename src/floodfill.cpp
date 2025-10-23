@@ -17,7 +17,8 @@
 #define LEFT 3
 
 // clang-format off
-uint8_t flood[16][16] = {
+uint8_t flood[16][16];
+    /*
     {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14},
     {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
     {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
@@ -34,7 +35,7 @@ uint8_t flood[16][16] = {
     {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
     {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
     {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14}
-};
+    */
 
 uint8_t maze[16][16] = {
     {W_D | W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_U | W_L},
@@ -65,6 +66,7 @@ const uint8_t neighborWall[] = {W_D, W_L, W_U, W_R};
 uint8_t x = 0;
 uint8_t y = 0;
 uint8_t rotation = UP;
+bool firstRun = true;
 bool secondAttempt = false;
 
 API api;
@@ -78,6 +80,7 @@ void reflood()
 {
     std::cerr << "reflooding" << std::endl;
     bool changed = true;
+    int changes = 0;
     while (changed)
     {
         changed = false;
@@ -120,10 +123,13 @@ void reflood()
                     api.setText(x, y,
                                 std::to_string(static_cast<int>(flood[x][y])));
                     changed = true;
+                    changes++;
                 }
             }
         }
     }
+    std::cerr << changes << " iterations during reflood, that's "
+              << changes * 255 << " iterations" << std::endl;
 }
 
 bool move()
@@ -168,10 +174,8 @@ bool move()
     nx = x + dx[dirForward];
     ny = y + dy[dirForward];
 
-    std::cerr << "checked front" << std::endl;
     if (!(maze[x][y] & mouseWall[dirForward]) && flood[nx][ny] < flood[x][y])
     {
-        std::cerr << "moved forward" << "\n\n";
         api.moveForward();
         x = nx;
         y = ny;
@@ -181,10 +185,8 @@ bool move()
     nx = x + dx[dirRight];
     ny = y + dy[dirRight];
 
-    std::cerr << "checked right" << std::endl;
     if (!(maze[x][y] & mouseWall[dirRight]) && flood[nx][ny] < flood[x][y])
     {
-        std::cerr << "moved right" << "\n\n";
         api.turnRight();
         api.moveForward();
         x = nx;
@@ -196,10 +198,8 @@ bool move()
     nx = x + dx[dirLeft];
     ny = y + dy[dirLeft];
 
-    std::cerr << "checked left" << std::endl;
     if (!(maze[x][y] & mouseWall[dirLeft]) && flood[nx][ny] < flood[x][y])
     {
-        std::cerr << "moved left" << "\n\n";
         api.turnLeft();
         api.moveForward();
         x = nx;
@@ -231,9 +231,6 @@ bool move()
         api.setText(x, y, std::to_string(static_cast<int>(flood[x][y])));
         uint8_t walls =
             mouseWall[dirForward] | mouseWall[dirRight] | mouseWall[dirLeft];
-        std::cerr << static_cast<int>(walls) << " & "
-                  << static_cast<int>(maze[x][y]) << " = "
-                  << static_cast<int>(walls & maze[x][y]) << std::endl;
         if (walls != (maze[x][y] & walls) && !secondAttempt)
         {
             secondAttempt = true;
@@ -248,7 +245,6 @@ bool move()
     api.turnRight();
     api.turnRight();
     api.moveForward();
-    std::cerr << "moved backwards" << "\n\n";
 
     x = nx;
     y = ny;
@@ -257,8 +253,18 @@ bool move()
     return false;
 }
 
-void start()
+void start(int endX, int endY)
 {
+    if (firstRun)
+    {
+        for (int i = 0; i < MAZE_DIMENSION; i++)
+            for (int j = 0; j < MAZE_DIMENSION; j++)
+                flood[i][j] = UINT8_MAX;
+        firstRun = false;
+    }
+
+    flood[endX][endY] = 0;
+    reflood();
     for (int i = 0; i < MAZE_DIMENSION; i++)
     {
         for (int j = 0; j < MAZE_DIMENSION; j++)

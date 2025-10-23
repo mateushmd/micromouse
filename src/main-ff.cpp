@@ -4,7 +4,7 @@
 void run()
 {
     bool run = true;
-    start();
+    start(15, 15);
     while (run)
         run = tick();
 }
@@ -12,7 +12,7 @@ void run()
 int main(int argc, char *argv[])
 {
     API api;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 10; i++)
     {
         run();
         reset();
