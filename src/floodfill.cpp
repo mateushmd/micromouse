@@ -1,7 +1,6 @@
 #include "floodfill.hpp"
 #include "API.h"
 #include <cstdint>
-#include <iostream>
 #include <string>
 
 #define MAZE_DIMENSION 16
@@ -93,7 +92,7 @@ struct Node {
 	~Node() = default;
 };
 
-void reflood(uint8_t x, uint8_t y)
+void reflood()
 {
 	Node stack [255] = {Node(x, y)};
 	int stack_n = 1;
@@ -129,7 +128,7 @@ void reflood(uint8_t x, uint8_t y)
 		}
 
 		if (lowest == 255)
-			continue;
+			u = stack[--stack_n];
 
 		if (flood[u.x][u.y] != lowest + 1) {
 			flood[u.x][u.y] = lowest + 1;
@@ -246,7 +245,6 @@ bool move()
 
     if (lowestNeighborVal != 255)
     {
-//	        flood[x][y] = lowestNeighborVal + 1;
         api.setText(x, y, std::to_string(static_cast<int>(flood[x][y])));
         uint8_t walls =
             mouseWall[dirForward] | mouseWall[dirRight] | mouseWall[dirLeft];
@@ -263,10 +261,7 @@ bool move()
 
     api.turnRight();
     api.turnRight();
-//	    api.moveForward();
 
-//	    x = nx;
-//	    y = ny;
     rotation = dirBack;
 
     return false;
@@ -284,9 +279,7 @@ void start(int endX, int endY)
 
     flood[endX][endY] = 0;*/
 
-	int startX = (endX+1 < MAZE_DIMENSION) ? endX+1 : endX-1;
-
-    reflood(startX, endY);
+    reflood();
     for (int i = 0; i < MAZE_DIMENSION; i++)
     {
         for (int j = 0; j < MAZE_DIMENSION; j++)
@@ -307,7 +300,7 @@ void start(int endX, int endY)
 bool tick()
 {
     if (!move())
-        reflood(x, y);
+        reflood();
     else
     {
         secondAttempt = false;

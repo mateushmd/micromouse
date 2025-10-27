@@ -4,7 +4,6 @@
 void run()
 {
     bool run = true;
-//	    start(2, 2);
     start(7, 7);
     while (run)
         run = tick();
