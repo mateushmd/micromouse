@@ -76,60 +76,90 @@ bool isInBounds(int x, int y)
     return x >= 0 && x < MAZE_DIMENSION && y >= 0 && y < MAZE_DIMENSION;
 }
 
-void reflood()
+struct Node {
+	uint8_t x;
+	uint8_t y;
+
+	Node () {
+		x = 255;
+		y = 255;
+	}
+
+	Node (uint8_t x, uint8_t y) {
+		this->x = x;
+		this->y = y;
+	}
+
+	~Node() = default;
+};
+
+void reflood(uint8_t x, uint8_t y)
 {
     std::cerr << "reflooding" << std::endl;
-    bool changed = true;
     int changes = 0;
-    while (changed)
-    {
-        changed = false;
-        for (int y = 0; y < MAZE_DIMENSION; y++)
-        {
-            for (int x = 0; x < MAZE_DIMENSION; x++)
-            {
-                if (flood[x][y] == 0)
-                    continue;
+	Node stack [500] = {Node(x, y)};
+	int stack_n = 1;
 
-                uint8_t lowest = UINT8_MAX;
+    while (stack_n > 0) {
+		Node u = stack[--stack_n];
+		
+		std::cerr << "x: " << (int)u.x << " y: " << (int)y << std::endl;
 
-                if (y + 1 < MAZE_DIMENSION && !(maze[x][y] & W_U))
-                {
-                    lowest =
-                        (flood[x][y + 1] < lowest) ? flood[x][y + 1] : lowest;
-                }
-                if (y - 1 > -1 && !(maze[x][y] & W_D))
-                {
-                    lowest =
-                        (flood[x][y - 1] < lowest) ? flood[x][y - 1] : lowest;
-                }
-                if (x + 1 < MAZE_DIMENSION && !(maze[x][y] & W_R))
-                {
-                    lowest =
-                        (flood[x + 1][y] < lowest) ? flood[x + 1][y] : lowest;
-                }
-                if (x - 1 > -1 && !(maze[x][y] & W_L))
-                {
-                    lowest =
-                        (flood[x - 1][y] < lowest) ? flood[x - 1][y] : lowest;
-                }
+		if (flood[u.x][u.y] == 0)
+			continue;
 
-                if (lowest == 255)
-                    continue;
+		uint8_t lowest = UINT8_MAX;
+		uint8_t neightbours = 0b0000;
 
-                if (flood[x][y] != lowest + 1)
-                {
-                    flood[x][y] = lowest + 1;
-                    api.setText(x, y,
-                                std::to_string(static_cast<int>(flood[x][y])));
-                    changed = true;
-                    changes++;
-                }
-            }
-        }
+		if (u.y + 1 < MAZE_DIMENSION && !(maze[u.x][u.y] & W_U))
+		{
+			lowest =
+				(flood[u.x][u.y + 1] < lowest) ? flood[u.x][u.y + 1] : lowest;
+			neightbours |= 0b0001;
+		}
+		if (u.y - 1 > -1 && !(maze[u.x][u.y] & W_D))
+		{
+			lowest =
+				(flood[u.x][u.y - 1] < lowest) ? flood[u.x][u.y - 1] : lowest;
+			neightbours |= 0b0010;
+		}
+		if (u.x + 1 < MAZE_DIMENSION && !(maze[u.x][u.y] & W_R))
+		{
+			lowest =
+				(flood[u.x + 1][u.y] < lowest) ? flood[u.x + 1][u.y] : lowest;
+			neightbours |= 0b1000;
+		}
+		if (u.x - 1 > -1 && !(maze[u.x][u.y] & W_L))
+		{
+			lowest =
+				(flood[u.x - 1][u.y] < lowest) ? flood[u.x - 1][u.y] : lowest;
+			neightbours |= 0b0100;
+		}
+
+		if (lowest == 255)
+			continue;
+
+		if (flood[u.x][u.y] != lowest + 1) {
+
+			flood[u.x][u.y] = lowest + 1;
+			api.setText(u.x, u.y,
+						std::to_string(static_cast<int>(flood[u.x][u.y])));
+			changes++;
+
+			if ((neightbours & 0b0001) != 0) {
+				stack[stack_n++] = Node(u.x, u.y+1);
+			}
+			if ((neightbours & 0b0010) != 0) {
+				stack[stack_n++] = Node(u.x, u.y-1);
+			}
+			if ((neightbours & 0b1000) != 0) {
+				stack[stack_n++] = Node(u.x+1, u.y);
+			}
+			if ((neightbours & 0b0100) != 0) {
+				stack[stack_n++] = Node(u.x-1, u.y);
+			}
+		}
     }
-    std::cerr << changes << " iterations during reflood, that's "
-              << changes * 255 << " iterations" << std::endl;
 }
 
 bool move()
@@ -264,7 +294,9 @@ void start(int endX, int endY)
     }
 
     flood[endX][endY] = 0;
-    reflood();
+
+    reflood(7, 8);
+	std::cerr << "test" << std::endl;
     for (int i = 0; i < MAZE_DIMENSION; i++)
     {
         for (int j = 0; j < MAZE_DIMENSION; j++)
@@ -285,7 +317,7 @@ void start(int endX, int endY)
 bool tick()
 {
     if (!move())
-        reflood();
+        reflood(x, y);
     else
     {
         secondAttempt = false;

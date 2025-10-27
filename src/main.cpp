@@ -4,7 +4,7 @@
 void run()
 {
     bool run = true;
-    start(15, 15);
+    start(8, 8);
     while (run)
         run = tick();
 }
