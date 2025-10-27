@@ -17,8 +17,8 @@
 #define LEFT 3
 
 // clang-format off
-uint8_t flood[16][16];
-    /*
+//	uint8_t flood[16][16];
+uint8_t flood[16][16] = {
     {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14},
     {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
     {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
@@ -35,7 +35,7 @@ uint8_t flood[16][16];
     {12, 11, 10,  9,  8,  7,  6,  5,  5,  6,  7,  8,  9, 10, 11, 12},
     {13, 12, 11, 10,  9,  8,  7,  6,  6,  7,  8,  9, 10, 11, 12, 13},
     {14, 13, 12, 11, 10,  9,  8,  7,  7,  8,  9, 10, 11, 12, 13, 14}
-    */
+};
 
 uint8_t maze[16][16] = {
     {W_D | W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_L, W_U | W_L},
@@ -95,44 +95,36 @@ struct Node {
 
 void reflood(uint8_t x, uint8_t y)
 {
-    std::cerr << "reflooding" << std::endl;
-    int changes = 0;
-	Node stack [500] = {Node(x, y)};
+	Node stack [255] = {Node(x, y)};
 	int stack_n = 1;
 
     while (stack_n > 0) {
 		Node u = stack[--stack_n];
 		
-		std::cerr << "x: " << (int)u.x << " y: " << (int)y << std::endl;
-
 		if (flood[u.x][u.y] == 0)
-			continue;
+			u = stack[--stack_n];
 
 		uint8_t lowest = UINT8_MAX;
 		uint8_t neightbours = 0b0000;
 
 		if (u.y + 1 < MAZE_DIMENSION && !(maze[u.x][u.y] & W_U))
 		{
-			lowest =
-				(flood[u.x][u.y + 1] < lowest) ? flood[u.x][u.y + 1] : lowest;
+			lowest = (flood[u.x][u.y + 1] < lowest) ? flood[u.x][u.y + 1] : lowest;
 			neightbours |= 0b0001;
 		}
 		if (u.y - 1 > -1 && !(maze[u.x][u.y] & W_D))
 		{
-			lowest =
-				(flood[u.x][u.y - 1] < lowest) ? flood[u.x][u.y - 1] : lowest;
+			lowest = (flood[u.x][u.y - 1] < lowest) ? flood[u.x][u.y - 1] : lowest;
 			neightbours |= 0b0010;
 		}
 		if (u.x + 1 < MAZE_DIMENSION && !(maze[u.x][u.y] & W_R))
 		{
-			lowest =
-				(flood[u.x + 1][u.y] < lowest) ? flood[u.x + 1][u.y] : lowest;
+			lowest = (flood[u.x + 1][u.y] < lowest) ? flood[u.x + 1][u.y] : lowest;
 			neightbours |= 0b1000;
 		}
 		if (u.x - 1 > -1 && !(maze[u.x][u.y] & W_L))
 		{
-			lowest =
-				(flood[u.x - 1][u.y] < lowest) ? flood[u.x - 1][u.y] : lowest;
+			lowest = (flood[u.x - 1][u.y] < lowest) ? flood[u.x - 1][u.y] : lowest;
 			neightbours |= 0b0100;
 		}
 
@@ -140,11 +132,8 @@ void reflood(uint8_t x, uint8_t y)
 			continue;
 
 		if (flood[u.x][u.y] != lowest + 1) {
-
 			flood[u.x][u.y] = lowest + 1;
-			api.setText(u.x, u.y,
-						std::to_string(static_cast<int>(flood[u.x][u.y])));
-			changes++;
+			api.setText(u.x, u.y, std::to_string(static_cast<int>(flood[u.x][u.y])));
 
 			if ((neightbours & 0b0001) != 0) {
 				stack[stack_n++] = Node(u.x, u.y+1);
@@ -257,7 +246,7 @@ bool move()
 
     if (lowestNeighborVal != 255)
     {
-        flood[x][y] = lowestNeighborVal + 1;
+//	        flood[x][y] = lowestNeighborVal + 1;
         api.setText(x, y, std::to_string(static_cast<int>(flood[x][y])));
         uint8_t walls =
             mouseWall[dirForward] | mouseWall[dirRight] | mouseWall[dirLeft];
@@ -274,10 +263,10 @@ bool move()
 
     api.turnRight();
     api.turnRight();
-    api.moveForward();
+//	    api.moveForward();
 
-    x = nx;
-    y = ny;
+//	    x = nx;
+//	    y = ny;
     rotation = dirBack;
 
     return false;
@@ -285,7 +274,7 @@ bool move()
 
 void start(int endX, int endY)
 {
-    if (firstRun)
+/*    if (firstRun)
     {
         for (int i = 0; i < MAZE_DIMENSION; i++)
             for (int j = 0; j < MAZE_DIMENSION; j++)
@@ -293,10 +282,11 @@ void start(int endX, int endY)
         firstRun = false;
     }
 
-    flood[endX][endY] = 0;
+    flood[endX][endY] = 0;*/
 
-    reflood(7, 8);
-	std::cerr << "test" << std::endl;
+	int startX = (endX+1 < MAZE_DIMENSION) ? endX+1 : endX-1;
+
+    reflood(startX, endY);
     for (int i = 0; i < MAZE_DIMENSION; i++)
     {
         for (int j = 0; j < MAZE_DIMENSION; j++)
