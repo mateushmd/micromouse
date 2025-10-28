@@ -2,7 +2,8 @@
 // Apostila Eletrogate - KIT Robotica
 // Classe para facilitar o uso da ponte H L298N na manipulação dos motores na função Setup e Loop.
 
-int abacaxi = 0;
+bool abacaxi = 0;
+
 const int led = 12;
 const int botao = 13;
 
@@ -12,75 +13,118 @@ const int ultraL_echo = 11;
 const int ultraR_trigger = A1;
 const int ultraR_echo = 3;
 
-class DCMotor {
-    int spd = 255, pin1, pin2;
-    public:
-    void Pinout(int in1, int in2){ // Pinout é o método para a declaração dos pinos que vão controlar
+struct DCMotor {
+
+    int speed = 255;
+    int pin1;
+    int pin2;
+    bool invert = false;
+
+    DCMotor() {}
+
+    DCMotor(bool invert) {
+        this->invert = invert;
+    }
+
+    ~DCMotor() = default;
+
+    void pinout(int in1, int in2) { // Pinout é o método para a declaração dos pinos que vão controlar
                                    // o objeto motor
         pin1 = in1;
         pin2 = in2;
         pinMode(pin1, OUTPUT);
         pinMode(pin2, OUTPUT);
     }
-    void Speed(int in1){ // Speed é o método que irá ser responsável por regular a velocidade
-        spd = in1;
+
+    void setSpeed(int in1) { // Speed é o método que irá ser responsável por regular a velocidade
+        speed = in1;
     }
-    void Forward(){ // Forward é o método para fazer o motor girar para frente
-        analogWrite(pin1, spd);
+
+    void fw() { // Forward é o método para fazer o motor girar para frente
+        analogWrite(pin1, speed);
         digitalWrite(pin2, LOW);
     }
-    void Backward(){ // Backward é o método para fazer o motor girar para trás
+
+    void bw() { // Backward é o método para fazer o motor girar para trás
         digitalWrite(pin1, LOW);
-        analogWrite(pin2, spd);
+        analogWrite(pin2, speed);
     }
-    void Stop(){ // Stop é o metodo para fazer o motor ficar parado.
+
+    void forward() {
+        if (!invert) {
+            fw();
+        } else {
+            bw();
+        }
+    }
+
+    void backward() {
+        if (!invert) {
+            bw();
+        } else {
+            fw();
+        }
+    }
+
+    void stop() { // Stop é o metodo para fazer o motor ficar parado.
         digitalWrite(pin1, LOW);
         digitalWrite(pin2, LOW);
     }
 };
-DCMotor Motor1, Motor2; // Criação de dois objetos motores, já que usaremos dois motores, e eles já
+
+DCMotor Motor1, Motor2(true); // Criação de dois objetos motores, já que usaremos dois motores, e eles já
 
 double ultraLeft(void) {
+
     digitalWrite(ultraL_trigger, HIGH);
     delayMicroseconds(10);
     digitalWrite(ultraL_trigger, LOW);
 
     double duration = pulseIn(ultraL_echo, HIGH);
+
     return (0.017f * duration);
 }
 
 double ultraRight(void) {
+
     digitalWrite(ultraR_trigger, HIGH);
     delayMicroseconds(10);
     digitalWrite(ultraR_trigger, LOW);
 
     double duration = pulseIn(ultraR_echo, HIGH);
+    
     return (0.017f * duration);
 }
 
-void direita(DCMotor m1, DCMotor m2, double time=250){
-    m1.Forward();  
-    m2.Backward();   // Forward
-    m1.Forward();
-    m2.Forward();    // Backward
+void direita(double time=450) {
+
+    Motor1.forward();  
+    Motor2.forward();
+
+    Motor1.forward();
+    Motor2.backward();
+
     delay(time);
 }
 
-void esquerda(DCMotor m1, DCMotor m2, double time=250){
-    m1.Forward();  
-    m2.Backward();   // Forward
-    m1.Backward();
-    m2.Backward();   // Forward
+void esquerda(double time=450) {
+
+    Motor1.forward();  
+    Motor2.forward();
+
+    Motor1.backward();
+    Motor2.forward();
+
     delay(time);
 }
 
-void frente(DCMotor m1, DCMotor m2){
+void frente(void) {
 
-    // 1.5 s
     unsigned long start = millis();
-    while ( (millis() - start) < 1500) {
-        m1.Forward(); 
-        m2.Backward();  
+    while ( (millis() - start) < 1500) {    // 1.5 s
+
+        Motor1.forward(); 
+        Motor2.forward();  
 
         double dL = ultraLeft();
         double dR = ultraRight();
@@ -92,28 +136,33 @@ void frente(DCMotor m1, DCMotor m2){
 
         if (dL < 20.0) {
             if (dL < 12) {
-                direita(m1, m2, 0.0);
+                direita(1.0);
             } else if (dL > 16) {
-                esquerda(m1, m2, 0.0);
+                esquerda(1.0);
             }
         }
 
         if (dR < 20.0) {
             if (dR < 12) {
-                esquerda(m1, m2, 0.0);
+                esquerda(1.0);
             } else if (dR > 16) {
-                direita(m1, m2, 0.0);
+                direita(1.0);
             }
         }
     }
+    Motor1.stop();
+    Motor2.stop();
     Serial.println("frente!");
 }
 
 // estão prontos para receber os comandos já configurados acima.
 void setup() {
+
     Serial.begin(9600);
-    Motor1.Pinout(5,6); // Seleção dos pinos que cada motor usará, como descrito na classe.
-    Motor2.Pinout(9,10);
+
+    Motor1.pinout(5, 6); // Seleção dos pinos que cada motor usará, como descrito na classe.
+    Motor2.pinout(9, 10);
+
     pinMode(led, OUTPUT);
     pinMode(botao, INPUT);
 
@@ -123,31 +172,42 @@ void setup() {
     pinMode(ultraR_trigger, OUTPUT);
     pinMode(ultraR_echo, INPUT);
 }
+
+// 500
+unsigned long start_loop = 0;
+
 void loop() {
 
-    if (abacaxi == 1){
-        digitalWrite(led, HIGH);
+    if (abacaxi == 1) {
 
-        delay(3000);
-
-        frente(Motor1, Motor2);
-        delay(500);
-        esquerda(Motor1, Motor2);
-        delay(500);
-        frente(Motor1, Motor2);
-
-        Motor1.Stop();
-        Motor2.Stop();
-        delay(3000);
-        if (digitalRead(botao) == LOW){
+        if (digitalRead(botao) == LOW) {
             abacaxi = 0;
+            digitalWrite(led, LOW);
+            delay(500);
+
+        } else if ( (millis() - start_loop) >= 3000) {
+
+            delay(3000);
+
+            frente();
+            delay(1000);
+
+            esquerda();
+            delay(1000);
+
+            frente();
+
+            start_loop = millis();
         }
-    }
-    else{
-        digitalWrite(led, LOW);
-        delay(500);
+
+    } else {
+
         if (digitalRead(botao) == LOW){
             abacaxi = 1;
+            start_loop = millis();
+            digitalWrite(led, HIGH);
+            delay(500);
         }
     }
+    delay(50);
 }
