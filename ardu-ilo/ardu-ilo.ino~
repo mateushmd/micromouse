@@ -81,6 +81,17 @@ double ultraLeft(void) {
 	return (0.017f * duration);
 }
 
+void abort (void) {
+
+	Motor1.stop();
+	Motor2.stop();
+
+	abacaxi = 0;
+
+	digitalWrite(ultraR_trigger, LOW);
+	digitalWrite(ultraL_trigger, LOW);
+}
+
 double ultraRight(void) {
 
 	digitalWrite(ultraR_trigger, HIGH);
@@ -133,8 +144,11 @@ void move(void) {
 		Serial.print(dR);
 		Serial.println();
 
-		if (dL < 20.0 && dL != 0.0) {
-			if (dL < 12.0) {
+		if (dL < 20.0) {
+			if (dL < 4.0) {
+				abort();
+				break;
+			} else if (dL < 12.0) {
 				turnRight(0.0);
 				turnedRight++;
 			} else if (dL > 16.0) {
@@ -143,8 +157,11 @@ void move(void) {
 			}
 		}
 
-		if (dR < 20.0 && dR != 0.0) {
-			if (dR < 12.0) {
+		if (dR < 20.0) {
+			if (dR < 4.0) {
+				abort();
+				break;
+			} else if (dR < 12.0) {
 				turnLeft(0.0);
 				turnedLeft++;
 			} else if (dR > 16.0) {
@@ -153,27 +170,22 @@ void move(void) {
 			}
 		}
 
-		if (turnedLeft > 35) {
-			unsigned long fix_start = millis();
-			while ( (millis() - fix_start) < 300 ) {
-				Motor1.backward();
-				Motor2.backward();
-				turnRight(0.0);
-			}
+		if (turnedLeft > 50) {
+			Motor1.backward();
+			Motor2.backward();
+			turnRight(10.0);
 			turnedLeft = 0;
 		}
-		if (turnedRight > 35) {
-			unsigned long fix_start = millis();
-			while ( (millis() - fix_start) < 300 ) {
-				Motor1.backward();
-				Motor2.backward();
-				turnLeft(0.0);
-			}
+		if (turnedRight > 50) {
+			Motor1.backward();
+			Motor2.backward();
+			turnLeft(10.0);
 			turnedRight = 0;
 		}
 	}
 	Motor1.stop();
 	Motor2.stop();
+	Serial.println("frente!");
 }
 
 // estão prontos para receber os comandos já configurados acima.
@@ -206,6 +218,9 @@ void loop() {
 			delay(500);
 
 		} else if ( (millis() - start_loop) >= 3000) {
+
+			delay(3000);
+
 			move();
 			start_loop = millis();
 		}
@@ -216,7 +231,7 @@ void loop() {
 			abacaxi = 1;
 			start_loop = millis();
 			digitalWrite(led, HIGH);
-			delay(3000);
+			delay(500);
 		}
 	}
 	delay(50);
